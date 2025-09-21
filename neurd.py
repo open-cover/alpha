@@ -17,59 +17,53 @@ class Matrix:
             self.m = matrix.shape[0]
             self.n = matrix.shape[1]
 
-    def compute_value(self, row, col):
-        row = np.array(row)
-        col = np.array(col)
-        return row @ self.entries @ col
-
 
 class Search:
 
     def __init__(self, matrix, weight):
         self.matrix = matrix
         self.weight = weight
-        self.col = np.zeros(matrix.n)
-        self.row_grad = np.zeros(matrix.m)
-        self.col_grad = np.zeros(matrix.n)
+        self.p2_logits = np.zeros(matrix.n)
+        self.p1_gradient = np.zeros(matrix.m)
+        self.p2_gradient = np.zeros(matrix.n)
 
-    def backward(self, row):
+    def backward(self, p1_logits):
 
-        row_p = softmax(row)
-        col_p = softmax(self.col)
+        p1_policy = softmax(p1_logits)
+        p2_policy = softmax(self.p2_logits)
 
-        v = self.matrix.compute_value(row_p, col_p)
+        value = 0
+        p1_q_values = np.zeros(self.matrix.m)
+        p2_q_values = np.zeros(self.matrix.n)
 
-        row_v = 0
-        row_q = np.zeros(self.matrix.m)
-        col_q = np.zeros(self.matrix.n)
-
+        # compute V and both players Q values
         for i in range(self.matrix.m):
             for j in range(self.matrix.n):
                 x = self.matrix.entries[i, j]
-                p = row_p[i]
-                q = col_p[j]
+                p = p1_policy[i]
+                q = p2_policy[j]
 
-                row_v += p * q * x
-                row_q[i] += q * x
-                col_q[j] += p * (1 - x)
-
-        for i in range(self.matrix.m):
-            self.row_grad[i] = row_q[i] - row_v
-        for j in range(self.matrix.n):
-            self.col_grad[j] = col_q[j] - (1 - row_v)
-
-    def update(self, row, row_lr, col_lr):
+                value += p * q * x
+                p1_q_values[i] += q * x
+                p2_q_values[j] += p * (1 - x)
 
         for i in range(self.matrix.m):
-            row[i] += row_lr * self.row_grad[i]
+            self.p1_gradient[i] = p1_q_values[i] - value
         for j in range(self.matrix.n):
-            self.col[j] += col_lr * self.col_grad[j]
+            self.p2_gradient[j] = p2_q_values[j] - (1 - value)
 
-        self.row_grad.fill(0)
-        self.col_grad.fill(0)
+    def update(self, p1_logits, p1_lr, p2_lr):
 
-    def weighted_alpha(self, row):
-        row_p = softmax(row)
+        for i in range(self.matrix.m):
+            p1_logits[i] += p1_lr * self.p1_gradient[i]
+        for j in range(self.matrix.n):
+            self.p2_logits[j] += p2_lr * self.p2_gradient[j]
+
+        self.p1_gradient.fill(0)
+        self.p2_gradient.fill(0)
+
+    def weighted_alpha(self, p1_logits):
+        row_p = softmax(p1_logits)
         col_payoffs = row_p @ self.matrix.entries
         return np.min(col_payoffs) * self.weight
 
@@ -100,8 +94,8 @@ def main():
     row_index = 2
     matrix_with_one_row = np.zeros((m, n))
     matrix_with_one_row[row_index] = 1
-    searches.append(Search(Matrix(zeros_matrix), .95))
-    searches.append(Search(Matrix(matrix_with_one_row), .05))
+    searches.append(Search(Matrix(zeros_matrix), 0.95))
+    searches.append(Search(Matrix(matrix_with_one_row), 0.05))
 
     lr = 0.01
     steps = 10000
