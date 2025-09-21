@@ -33,59 +33,86 @@ class Matrix:
         return (v_row_best - v) + (v - v_col_best)
 
 
-def update(matrix, row, col, lr):
-    row_p = softmax(row)
-    col_p = softmax(col)
+class Search:
 
-    v = matrix.go(row_p, col_p)
+    def __init__(self, matrix, weight):
+        self.matrix = matrix
+        self.weight = weight
+        self.row = np.array(matrix.m)
+        self.col = np.array(matrix.n)
+        self.row_grad = np.array(matrix.m)
+        self.col_grad = np.array(matrix.n)
 
-    row_v = 0
-    row_q = np.zeros((matrix.m,))
-    col_q = np.zeros((matrix.n,))
 
-    for i in range(matrix.m):
-        for j in range(matrix.n):
-            x = matrix.entries[i, j]
-            p = row_p[i]
-            q = col_p[j]
+    def backward(self):
 
-            row_v += p * q * x
-            row_q[i] += q * x
-            col_q[j] += p * (1 - x)
+        row_p = softmax(self.row)
+        col_p = softmax(self.col)
 
-    for i in range(matrix.m):
-        row[i] += lr * (row_q[i] - row_v)
-    for j in range(matrix.n):
-        col[j] += lr * (col_q[j] - (1 - row_v))
+        v = self.matrix.go(row_p, col_p)
 
-def get_expl(matrix, steps, lr):
+        row_v = 0
+        col_q = np.zeros((matrix.n,))
 
-    row = np.zeros(matrix.m)
-    col = np.zeros(matrix.n)
-    for t in range(steps):
-        update(matrix, row, col, lr)
-    return matrix.exploitability(row, col)
+        for i in range(self.matrix.m):
+            for j in range(self.matrix.n):
+                x = self.matrix.entries[i, j]
+                p = row_p[i]
+                q = col_p[j]
+
+                row_v += p * q * x
+                row_q[i] += q * x
+                col_q[j] += p * (1 - x)
+
+        for i in range(self.matrix.m):
+            self.row_grad[i] = (row_q[i] - row_v)
+        for j in range(self.matrix.n):
+            self.col_grad[j] = (col_q[j] - (1 - row_v))
+
+
+    def update(self, row_lr, col_lr):
+
+        for i in range(self.matrix.m):
+            self.row[i] += row_lr * self.row_grad[i]
+        for j in range(self.matrix.n):
+            self.col[j] = col_lr * self.col_grad[j]
+
+        self.row_grad.fill(0)
+        self.col_grad.fill(0)
+
+
+    def expl(self,):
+        return self.matrix.exploitability(self.row, self.col)
 
 def main():
     import sys
 
+    m = 4
+    max_n = 9
+
     np.set_printoptions(precision=3, suppress=True)
 
-    m, n = 4, 4
+    n_searches = 2
 
-    steps = 5000
-    if len(sys.argv) > 1:
-        steps = int(sys.argv[1])
-    print("Steps: ", steps)
+    weights = np.random.rand(n_searches)
+    weights /= weights.sum()
 
-    lr = 0.01
-    trials = 100
-    total_expl = 0
-
-    for _ in range(trials)
+    searches = []
+    for _ in range(n_searches):
+        n = random.randint(4, max_n + 1)
         matrix = Matrix(m, n)
-        total_expl += get_expl(matrix, steps, lr)
-    print(f"Avg. expl: {total_expl / trials}")
+        n_searches.append(matrix, weights[i])
+
+    lr = .01
+
+    steps = 1000
+
+    for _ in range(steps):
+
+        for search in searches:
+            search.backward()
+        for search, w in zip(searches, weights):
+            search.step(lr * w, lr)
 
 if __name__ == "__main__":
     main()
