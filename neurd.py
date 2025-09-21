@@ -5,10 +5,15 @@ def softmax(x):
     return e / e.sum()
 
 class Matrix:
-    def __init__(self, m, n):
-        self.m = m
-        self.n = n
-        self.entries = np.random.rand(m, n)
+    def __init__(self, matrix=None, m=None, n=None):
+        if matrix is None:
+            self.m = m
+            self.n = n
+            self.entries = np.random.rand(m, n)
+        else:
+            self.entries = matrix
+            self.m = matrix.shape[0]
+            self.n = matrix.shape[1]
 
     def go(self, row, col):
         row = np.array(row)
@@ -80,6 +85,12 @@ class Search:
 
         self.row_grad.fill(0)
         self.col_grad.fill(0)
+        
+
+    def alpha(self):
+        row_p = softmax(self.row)
+        col_payoffs = row_p @ self.matrix.entries
+        return np.min(col_payoffs) * self.weight
 
 
     def expl(self,):
@@ -99,14 +110,23 @@ def main():
     weights /= weights.sum()
 
     searches = []
-    for _ in range(n_searches):
-        n = np.random.randint(4, max_n)
-        matrix = Matrix(m, n)
-        searches.append(Search(matrix, weights[_]))
+    # for _ in range(n_searches):
+    #     n = np.random.randint(4, max_n)
+    #     matrix = Matrix(m, n)
+    #     searches.append(Search(matrix, weights[_]))
+
+    # all zeros matrix
+    n = 4
+    zeros_matrix = np.zeros((m, n))
+    row_index = 2
+    matrix_with_one_row = np.zeros((m, n))
+    matrix_with_one_row[row_index] = 1
+    searches.append(Search(Matrix(zeros_matrix), .95))
+    searches.append(Search(Matrix(matrix_with_one_row), .05))
 
     lr = .01
-
     steps = 1000
+    window = 10
 
     for _ in range(steps):
 
@@ -114,6 +134,13 @@ def main():
             search.backward()
         for search, w in zip(searches, weights):
             search.update(lr * w, lr)
+
+
+        if (_ % window) == 0:
+            alpha = 0
+            for search in searches:
+                alpha += search.alpha()
+            print(alpha)
 
 if __name__ == "__main__":
     main()
