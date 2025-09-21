@@ -38,10 +38,10 @@ class Search:
     def __init__(self, matrix, weight):
         self.matrix = matrix
         self.weight = weight
-        self.row = np.array(matrix.m)
-        self.col = np.array(matrix.n)
-        self.row_grad = np.array(matrix.m)
-        self.col_grad = np.array(matrix.n)
+        self.row = np.zeros(matrix.m)
+        self.col = np.zeros(matrix.n)
+        self.row_grad = np.zeros(matrix.m)
+        self.col_grad = np.zeros(matrix.n)
 
 
     def backward(self):
@@ -52,7 +52,8 @@ class Search:
         v = self.matrix.go(row_p, col_p)
 
         row_v = 0
-        col_q = np.zeros((matrix.n,))
+        row_q = np.zeros(self.matrix.m)
+        col_q = np.zeros(self.matrix.n)
 
         for i in range(self.matrix.m):
             for j in range(self.matrix.n):
@@ -99,9 +100,9 @@ def main():
 
     searches = []
     for _ in range(n_searches):
-        n = random.randint(4, max_n + 1)
+        n = np.random.randint(4, max_n)
         matrix = Matrix(m, n)
-        n_searches.append(matrix, weights[i])
+        searches.append(Search(matrix, weights[_]))
 
     lr = .01
 
@@ -112,7 +113,7 @@ def main():
         for search in searches:
             search.backward()
         for search, w in zip(searches, weights):
-            search.step(lr * w, lr)
+            search.update(lr * w, lr)
 
 if __name__ == "__main__":
     main()
