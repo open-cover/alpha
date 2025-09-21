@@ -106,6 +106,54 @@ def playing_for_out():
                 alpha += search.weighted_alpha(p1_logits)
             print(f"Alpha: {alpha}")
 
+    for search in searches:
+        print(search.weight)
+        print(search.matrix.entries)
+        print(f"P2: {softmax(search.p2_logits)}")
+    print(f"Strategy: {softmax(p1_logits)}")
+
+
+def main():
+    # Same strategy/params for all states
+    m = 2
+    min_n = 2
+    max_n = 2
+    p1_logits = np.zeros(m)
+
+    np.set_printoptions(precision=3, suppress=True)
+
+    searches = []
+
+    n_searches = 2
+    weights = np.random.rand(n_searches)
+    weights /= weights.sum()
+    for _ in range(n_searches):
+        n = np.random.randint(min_n, max_n + 1)
+        matrix = Matrix(None, m, n)
+        searches.append(Search(matrix, weights[_]))
+
+    lr = 0.01
+    steps = 10000
+    window = 100
+
+    for _ in range(steps):
+
+        for search in searches:
+            search.backward(p1_logits)
+        for search in searches:
+            search.update(p1_logits, lr * search.weight, lr)
+
+        if (_ % window) == 0:
+            alpha = 0
+            for search in searches:
+                alpha += search.weighted_alpha(p1_logits)
+            print(f"Alpha: {alpha}")
+
+    for search in searches:
+        print(search.weight)
+        print(search.matrix.entries)
+        print(f"P2: {softmax(search.p2_logits)}")
+    print(f"Strategy: {softmax(p1_logits)}")
 
 if __name__ == "__main__":
     playing_for_out()
