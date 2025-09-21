@@ -58,6 +58,13 @@ def update(matrix, row, col, lr):
     for j in range(matrix.n):
         col[j] += lr * (col_q[j] - (1 - row_v))
 
+def get_expl(matrix, steps, lr):
+
+    row = np.zeros(matrix.m)
+    col = np.zeros(matrix.n)
+    for t in range(steps):
+        update(matrix, row, col, lr)
+    return matrix.exploitability(row, col)
 
 def main():
     import sys
@@ -65,29 +72,20 @@ def main():
     np.set_printoptions(precision=3, suppress=True)
 
     m, n = 4, 4
-    matrix = Matrix(m, n)
-    print("Payoff matrix:\n", matrix.entries)
-
-    row = np.zeros(m)
-    col = np.zeros(n)
 
     steps = 5000
     if len(sys.argv) > 1:
         steps = int(sys.argv[1])
     print("Steps: ", steps)
-    
+
     lr = 0.01
+    trials = 100
+    total_expl = 0
 
-    for t in range(steps):
-        update(matrix, row, col, lr)
-
-    row_p = softmax(row)
-    col_p = softmax(col)
-
-    print("\nFinal row strategy:", row_p)
-    print("Final col strategy:", col_p)
-    print("Exploitability:", matrix.exploitability(row, col))
-
+    for _ in range(trials)
+        matrix = Matrix(m, n)
+        total_expl += get_expl(matrix, steps, lr)
+    print(f"Avg. expl: {total_expl / trials}")
 
 if __name__ == "__main__":
     main()
