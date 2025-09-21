@@ -68,34 +68,26 @@ class Search:
         return np.min(col_payoffs) * self.weight
 
 
-def main():
-    import sys
+def playing_for_out():
 
     m = 4
-    row = np.zeros(m)
+
+    # Same strategy/params for all states
+    p1_logits = np.zeros(m)
 
     np.set_printoptions(precision=3, suppress=True)
 
     searches = []
 
-    # Random searches
-    # n_searches = 2
-    # max_n = 4
-    # weights = np.random.rand(n_searches)
-    # weights /= weights.sum()
-    # for _ in range(n_searches):
-    #     n = np.random.randint(4, max_n + 1)
-    #     matrix = Matrix(None, m, n)
-    #     print(matrix.entries)
-    #     searches.append(Search(matrix, weights[_]))
-    # Binary example
     n = 4
-    zeros_matrix = np.zeros((m, n))
-    row_index = 2
-    matrix_with_one_row = np.zeros((m, n))
-    matrix_with_one_row[row_index] = 1
-    searches.append(Search(Matrix(zeros_matrix), 0.95))
-    searches.append(Search(Matrix(matrix_with_one_row), 0.05))
+
+    just_losing = np.zeros((m, n))
+    one_winning_move = np.zeros((m, n))
+    one_winning_move[0] = 1
+    # most games are losing
+    searches.append(Search(Matrix(just_losing), 0.95))
+    # determinization where you have an out
+    searches.append(Search(Matrix(one_winning_move), 0.05))
 
     lr = 0.01
     steps = 10000
@@ -104,16 +96,16 @@ def main():
     for _ in range(steps):
 
         for search in searches:
-            search.backward(row)
+            search.backward(p1_logits)
         for search in searches:
-            search.update(row, lr * search.weight, lr)
+            search.update(p1_logits, lr * search.weight, lr)
 
         if (_ % window) == 0:
             alpha = 0
             for search in searches:
-                alpha += search.weighted_alpha(row)
+                alpha += search.weighted_alpha(p1_logits)
             print(f"Alpha: {alpha}")
 
 
 if __name__ == "__main__":
-    main()
+    playing_for_out()
